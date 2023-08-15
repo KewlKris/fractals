@@ -6,15 +6,16 @@
 	"source": "./src/index.html",
 	"scripts": {
 		"build": "parcel build",
-        "dev": "parcel",
-        "dev-nocache": "parcel --no-cache"
+		"dev": "parcel",
+		"dev-nocache": "parcel --no-cache"
 	},
 	"author": "",
 	"license": "ISC",
-    "dependencies": {
-        "fractal-renderer": "file:../fractal-renderer/pkg"
-    },
+	"dependencies": {
+		"fractal-renderer": "file:../fractal-renderer/pkg"
+	},
 	"devDependencies": {
+		"@parcel/transformer-sass": "^2.9.3",
 		"parcel": "^2.9.3"
 	}
 }

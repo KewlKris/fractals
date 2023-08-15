@@ -10,10 +10,10 @@ extern "C" {
 
 #[wasm_bindgen]
 pub fn greet() {
-    alert("Hello, fractal-renderer!");
+    alert("Hello, fractal-renderer! Sup!");
 }
 
 #[wasm_bindgen]
-pub fn run() {
-    graphics::run();
+pub async fn run() {
+    graphics::run().await;
 }
