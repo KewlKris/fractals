@@ -1,4 +1,5 @@
 mod utils;
+mod graphics;
 
 use wasm_bindgen::prelude::*;
 
@@ -10,4 +11,9 @@ extern "C" {
 #[wasm_bindgen]
 pub fn greet() {
     alert("Hello, fractal-renderer!");
+}
+
+#[wasm_bindgen]
+pub fn run() {
+    graphics::run();
 }

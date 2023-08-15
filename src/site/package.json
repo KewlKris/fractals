@@ -1,11 +1,20 @@
 {
-  "name": "site",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+	"name": "site",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"source": "./src/index.html",
+	"scripts": {
+		"build": "parcel build",
+        "dev": "parcel",
+        "dev-nocache": "parcel --no-cache"
+	},
+	"author": "",
+	"license": "ISC",
+    "dependencies": {
+        "fractal-renderer": "file:../fractal-renderer/pkg"
+    },
+	"devDependencies": {
+		"parcel": "^2.9.3"
+	}
 }
