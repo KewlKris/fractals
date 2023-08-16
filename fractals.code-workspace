@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "src/fractal-renderer"
+		},
+		{
+			"path": "src/site"
+		}
+	],
+	"settings": {
+		"rust-analyzer.showUnlinkedFileNotification": false
+	}
+}
