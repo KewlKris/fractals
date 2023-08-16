@@ -1,13 +1,20 @@
 import initWasm from "fractal-renderer";
 
+let WASM = undefined;
+
 (async () => {
-    let wasm = await initWasm();
-    await wasm.run();
-    setTimeout(() => {
-        let canvas = document.querySelector('#fractal-div>canvas');
-        //canvas.width = window.innerWidth;
-        //canvas.height = window.innerHeight;
-        //canvas.setAttribute('width', window.innerWidth);
-        //canvas.setAttribute('height', window.innerHeight);
-    }, 50);
+    WASM = await initWasm();
+    await WASM.run();
+    window.addEventListener('resize', () => {
+        updateSize();
+    });
+    updateSize();
 })();
+
+function updateSize() {
+    let canvas = document.querySelector('#fractal-div>canvas');
+    let ratio = window.devicePixelRatio;
+    WASM.set_size(window.innerWidth * ratio, window.innerHeight * ratio);
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+}
