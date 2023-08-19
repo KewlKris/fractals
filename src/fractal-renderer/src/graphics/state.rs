@@ -16,6 +16,8 @@ pub struct State {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
+    index_buffer: wgpu::Buffer,
+    num_indices: u32,
 }
 
 impl State {
@@ -136,6 +138,14 @@ impl State {
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
+        let index_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+        let num_indices = INDICES.len() as u32;
 
         Self {
             window,
@@ -147,6 +157,8 @@ impl State {
             render_pipeline,
             vertex_buffer,
             num_vertices: VERTICES.len() as u32,
+            index_buffer,
+            num_indices,
         }
     }
 
@@ -208,7 +220,8 @@ impl State {
             // NEW!
             render_pass.set_pipeline(&self.render_pipeline); // 2.
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..self.num_vertices, 0..1); // 3.
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
         }
     
         // submit will accept anything that implements IntoIter
@@ -248,7 +261,12 @@ impl Vertex {
 }
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+    Vertex { position: [-1.0, 1.0, 0.0], color: [1.0, 0.0, 0.0] },
+    Vertex { position: [-1.0, -1.0, 0.0], color: [0.0, 1.0, 0.0] },
+    Vertex { position: [1.0, -1.0, 0.0], color: [0.0, 0.0, 1.0] },
+    Vertex { position: [1.0, 1.0, 0.0], color: [0.0, 0.0, 1.0] },
+];
+
+const INDICES: &[u16] = &[
+    0, 1, 2, 0, 2, 3
 ];
