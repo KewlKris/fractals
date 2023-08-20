@@ -20,10 +20,18 @@ fn vs_main(vertex: VertexInput) -> VertexOutput {
 
 // Fragment shader
 
+struct DataUniform {
+    time: f32,
+    _padding1: u32,
+    _padding2: u32,
+    _padding3: u32,
+};
+@group(0) @binding(0) var<uniform> data: DataUniform;
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var complex: vec2<f32> = in.domain;
-    let constant: vec2<f32> = vec2<f32>(-0.67, -0.475);
+    let constant: vec2<f32> = vec2<f32>(-0.545 + (sin(data.time/3.0) * 0.02), -0.5);
 
     for (var i: u32 = 0u; i<200u; i++) {
         complex = compute_julia(complex, constant);
@@ -40,7 +48,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
 fn compute_julia(zn: vec2<f32>, c: vec2<f32>) -> vec2<f32> {
     // Square the complex number
-    let real: f32 = (zn.x * zn.x) - (zn.y - zn.y);
+    let real: f32 = (zn.x * zn.x) - (zn.y * zn.y);
     let imaginary: f32 = 2.0 * zn.x * zn.y;
 
     // Add constant and return

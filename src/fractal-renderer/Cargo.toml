@@ -24,6 +24,7 @@ web-sys = { version = "0.3", features = [
 ]}
 pollster = "0.3.0"
 bytemuck = { version = "1.13.1", features = [ "derive" ] }
+instant = { version = "0.1.12", features = [ "wasm-bindgen" ] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"

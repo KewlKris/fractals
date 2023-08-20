@@ -5,6 +5,7 @@ use winit::{
     window::Window,
 };
 use wgpu::util::DeviceExt;
+use instant::Instant;
 
 pub struct State {
     surface: wgpu::Surface,
@@ -19,6 +20,10 @@ pub struct State {
     index_buffer: wgpu::Buffer,
     num_indices: u32,
     vertices: [Vertex; 4],
+    data_uniform: DataUniform,
+    data_buffer: wgpu::Buffer,
+    data_bind_group: wgpu::BindGroup,
+    start_time: Instant,
 }
 
 impl State {
@@ -81,6 +86,43 @@ impl State {
         };
         surface.configure(&device, &config);
 
+        let data_uniform = DataUniform {
+            time: 0.0,
+            _padding: [0; 12],
+        };
+        let data_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Data Buffer"),
+                contents: bytemuck::cast_slice(&[data_uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+        let data_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+            label: Some("data_bind_group_layout"),
+        });
+        let data_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &data_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: data_buffer.as_entire_binding(),
+                }
+            ],
+            label: Some("data_bind_group"),
+        });
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
@@ -88,7 +130,9 @@ impl State {
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[
+                &data_bind_group_layout,
+            ],
             push_constant_ranges: &[],
         });
 
@@ -166,7 +210,11 @@ impl State {
             num_vertices: vertices.len() as u32,
             index_buffer,
             num_indices,
-            vertices
+            vertices,
+            data_uniform,
+            data_buffer,
+            data_bind_group,
+            start_time: Instant::now(),
         }
     }
 
@@ -215,6 +263,10 @@ impl State {
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        // Update the data uniform
+        self.data_uniform.time = (Instant::now() - self.start_time).as_secs_f32();
+        self.queue.write_buffer(&self.data_buffer, 0, bytemuck::cast_slice(&[self.data_uniform]));
+
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -247,6 +299,7 @@ impl State {
         
             // NEW!
             render_pass.set_pipeline(&self.render_pipeline); // 2.
+            render_pass.set_bind_group(0, &self.data_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
@@ -291,3 +344,10 @@ impl Vertex {
 const INDICES: &[u16] = &[
     0, 1, 2, 0, 2, 3
 ];
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct DataUniform {
+    time: f32,
+    _padding: [u8; 12],
+}
