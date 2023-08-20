@@ -18,3 +18,13 @@ function updateSize() {
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
 }
+
+window.julia = (complex, constant) => {
+    let real = (complex[0] * complex[0]) - (complex[1] * complex[1]);
+    let imaginary = 2 * complex[0] * complex[1];
+    return [real + constant[0], imaginary + constant[1]];
+};
+
+window.jlen = (complex) => {
+    return Math.sqrt((complex[0] * complex[0]) + (complex[1] * complex[1]));
+};

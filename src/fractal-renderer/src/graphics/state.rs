@@ -18,6 +18,7 @@ pub struct State {
     num_vertices: u32,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+    vertices: [Vertex; 4],
 }
 
 impl State {
@@ -131,11 +132,17 @@ impl State {
             multiview: None, // 5.
         });
 
+        let vertices: [Vertex; 4] = [
+            Vertex { position: [-1.0, 1.0], domain: [-1.0, 1.0] },
+            Vertex { position: [-1.0, -1.0], domain: [-1.0, -1.0] },
+            Vertex { position: [1.0, -1.0], domain: [1.0, -1.0] },
+            Vertex { position: [1.0, 1.0], domain: [1.0, 1.0] },
+        ];
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             }
         );
         let index_buffer = device.create_buffer_init(
@@ -156,9 +163,10 @@ impl State {
             size,
             render_pipeline,
             vertex_buffer,
-            num_vertices: VERTICES.len() as u32,
+            num_vertices: vertices.len() as u32,
             index_buffer,
             num_indices,
+            vertices
         }
     }
 
@@ -176,6 +184,26 @@ impl State {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+
+            // Update domain
+            if new_size.width > new_size.height {
+                // Landscape
+                let ratio = new_size.width as f32 / new_size.height as f32;
+                self.vertices[0].domain = [-ratio, 1.0];
+                self.vertices[1].domain = [-ratio, -1.0];
+                self.vertices[2].domain = [ratio, -1.0];
+                self.vertices[3].domain = [ratio, 1.0];
+            } else {
+                // Portrait
+                let ratio = new_size.height as f32 / new_size.width as f32;
+                self.vertices[0].domain = [-1.0, ratio];
+                self.vertices[1].domain = [-1.0, -ratio];
+                self.vertices[2].domain = [1.0, -ratio];
+                self.vertices[3].domain = [1.0, ratio];
+            }
+
+            // Update vertex buffer
+            self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
         }
     }
 
@@ -235,8 +263,8 @@ impl State {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
+    position: [f32; 2],
+    domain: [f32; 2],
 }
 
 impl Vertex {
@@ -248,24 +276,17 @@ impl Vertex {
                 wgpu::VertexAttribute {
                     offset: 0,
                     shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: wgpu::VertexFormat::Float32x2,
                 },
                 wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
                     shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: wgpu::VertexFormat::Float32x2,
                 }
             ]
         }
     }
 }
-
-const VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, 1.0, 0.0], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-1.0, -1.0, 0.0], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [1.0, -1.0, 0.0], color: [0.0, 0.0, 1.0] },
-    Vertex { position: [1.0, 1.0, 0.0], color: [0.0, 0.0, 1.0] },
-];
 
 const INDICES: &[u16] = &[
     0, 1, 2, 0, 2, 3
