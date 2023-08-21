@@ -29,7 +29,7 @@ struct DataUniform {
 @group(0) @binding(0) var<uniform> data: DataUniform;
 
 const MAX_ITERATIONS: u32 = 200u;
-const ESCAPE_RANGE: f32 = 2.0;
+const ESCAPE_RANGE: f32 = 3.0;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -51,13 +51,15 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     //let percent: f32 = f32(escape_time) / f32(MAX_ITERATIONS); // Color based on the integer escape_time
     let escape_length = length(complex);
     if (escape_length > ESCAPE_RANGE) {
-        // Draw on logarithmic scale
-        let percent: f32 = f32(escape_time) - log2(log(length(complex)) / log(ESCAPE_RANGE));
-        return vec4<f32>(percent, percent, percent, 1.0);
+        //let percent: f32 = f32(escape_time + 0u) - log2(log(escape_length) / log(ESCAPE_RANGE)); // Logarithmic scale
+        let percent: f32 = f32(escape_time) / f32(MAX_ITERATIONS);
 
+        //return vec4<f32>(percent, percent, percent, 1.0);
+        return vec4<f32>(map_color_linear(percent), 1.0);
     } else {
         // Draw interior color
-        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+        //return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+        return vec4<f32>(map_color_linear(1.0), 1.0);
     }
 }
 
@@ -70,24 +72,74 @@ fn compute_julia(zn: vec2<f32>, c: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(real, imaginary) + c;
 }
 
-fn map_color(percent: f32) -> vec3<f32> {
-    const color_count: u32 = 4u;
-    const colors: array<vec3<f32>, color_count> = array<vec3<f32>, color_count>(
-        vec3<f32>(0.0, 0.0, 0.0),
-        vec3<f32>(1.0, 0.0, 0.0),
-        vec3<f32>(0.0, 1.0, 0.0),
-        vec3<f32>(0.0, 0.0, 1.0),
-    );
-    const color_end_points: array<f32, color_count> = array<f32, color_count>(
-        0.25, 0.5, 0.75, 1.0
-    );
+const COLOR_COUNT: u32 = 8u;
+var<private> COLORS: array<vec3<f32>, COLOR_COUNT> = array<vec3<f32>, COLOR_COUNT>(
+    vec3<f32>(0.0, 0.0, 0.0),
+    vec3<f32>(1.0, 0.0, 0.0),
+    vec3<f32>(1.0, 1.0, 0.0),
+    vec3<f32>(0.0, 1.0, 0.0),
+    vec3<f32>(0.0, 1.0, 1.0),
+    vec3<f32>(0.0, 0.0, 1.0),
+    vec3<f32>(1.0, 0.0, 1.0),
+    vec3<f32>(1.0, 1.0, 1.0),
+);
+fn map_color_linear(percent: f32) -> vec3<f32> {
+    var clamped_percent = clamp(percent, 0.0, 1.0);
+    clamped_percent *= f32(COLOR_COUNT - 1u);
+    let start_index: u32 = u32(clamped_percent);
+    var final_color: vec3<f32> = vec3<f32>(0.0);
+    if (start_index != (COLOR_COUNT - 1u)) {
+        let end_index: u32 = start_index + 1u;
 
-    // First determine the color index
-    var color_index: u32 = 0;
-    for (var i=0u i<color_count; i++) {
-        if (percent <= color_end_points[i]) {
-            color_index = i;
-            break;
-        }
+        let start_color = COLORS[start_index];
+        let end_color = COLORS[end_index];
+
+        let start_value: f32 = f32(start_index) * (1.0 / f32(COLOR_COUNT - 1u));
+        let end_value: f32 = f32(end_index) * (1.0 / f32(COLOR_COUNT - 1u));
+        let ratio = (clamped_percent - start_value) / (end_value - start_value);
+        final_color = (start_color * (1.0 - ratio)) + (end_color * (ratio));
+    } else {
+        final_color = COLORS[COLOR_COUNT - 1u];
     }
+
+    // Convert to sRGB color space
+    final_color = pow((final_color + 0.055) / 1.055, vec3<f32>(2.4));
+    return final_color;
 }
+// var<private> COLOR_START_POINTS: array<f32, COLOR_COUNT> = array<f32, COLOR_COUNT>(
+//     0.0, 0.80, 0.90, 0.95
+// );
+// fn map_color(percent: f32) -> vec3<f32> {
+//     // Determine the colors to mix
+//     var end_color_index: u32 = 0u;
+//     for (end_color_index = 0u; end_color_index<COLOR_COUNT; end_color_index++) {
+//         if (percent < COLOR_START_POINTS[end_color_index]) {
+//             // This is the second color
+//             break;
+//         }
+//     }
+//     var start_color_index: u32 = end_color_index - 1u;
+
+//     var final_color: vec3<f32> = vec3<f32>(0.0);
+//     if (end_color_index != COLOR_COUNT) {
+//         // We have a color range
+//         var start_color: vec3<f32> = COLORS[start_color_index];
+//         var end_color: vec3<f32> = COLORS[end_color_index];
+
+//         // Calculate ratio
+//         let start: f32 = COLOR_START_POINTS[start_color_index];
+//         let end: f32 = COLOR_START_POINTS[end_color_index];
+//         let ratio = (percent - start) / (end - start);
+
+//         // Mix colors
+//         final_color = (start_color * (1.0 - ratio)) + (end_color * (ratio));
+
+//     } else {
+//         // No interpolation, use the last color
+//         final_color = COLORS[COLOR_COUNT - 1u];
+//     }
+
+//     // Convert to sRGB color space
+//     final_color = pow((final_color + 0.055) / 1.055, vec3<f32>(2.4));
+//     return final_color;
+// }
