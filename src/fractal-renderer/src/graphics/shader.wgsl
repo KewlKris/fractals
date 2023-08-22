@@ -29,7 +29,7 @@ struct DataUniform {
 @group(0) @binding(0) var<uniform> data: DataUniform;
 
 const MAX_ITERATIONS: u32 = 200u;
-const ESCAPE_RANGE: f32 = 3.0;
+const ESCAPE_RANGE: f32 = 2.0;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -38,7 +38,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     //let constant = in.domain; // This renders the Mandelbrot set
 
     var escape_time: u32;
-    for (escape_time = 0u; escape_time < MAX_ITERATIONS; escape_time++) {
+    for (escape_time = 1u; escape_time < MAX_ITERATIONS; escape_time++) {
         complex = compute_julia(complex, constant);
 
         if (length(complex) > ESCAPE_RANGE) {
@@ -51,8 +51,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     //let percent: f32 = f32(escape_time) / f32(MAX_ITERATIONS); // Color based on the integer escape_time
     let escape_length = length(complex);
     if (escape_length > ESCAPE_RANGE) {
-        //let percent: f32 = f32(escape_time + 0u) - log2(log(escape_length) / log(ESCAPE_RANGE)); // Logarithmic scale
+        //let percent: f32 = f32(escape_time - 1u) - log2(log(escape_length) / log(ESCAPE_RANGE)); // Logarithmic scale
         let percent: f32 = f32(escape_time) / f32(MAX_ITERATIONS);
+        //let percent = abs(in.domain.x);
+        //let percent = (f32(escape_time - 2u) - (log(log(escape_length)) / log(2.0)));
+        //let percent = 1.0 - log(escape_length) / log(f32(ESCAPE_RANGE));
+        //let percent = f32(escape_time + 2u) - log(log((complex.x * complex.x) + (complex.y * complex.y))) / log(2.0);
 
         //return vec4<f32>(percent, percent, percent, 1.0);
         return vec4<f32>(map_color_linear(percent), 1.0);
@@ -84,9 +88,9 @@ var<private> COLORS: array<vec3<f32>, COLOR_COUNT> = array<vec3<f32>, COLOR_COUN
     vec3<f32>(1.0, 1.0, 1.0),
 );
 fn map_color_linear(percent: f32) -> vec3<f32> {
-    var clamped_percent = clamp(percent, 0.0, 1.0);
-    clamped_percent *= f32(COLOR_COUNT - 1u);
-    let start_index: u32 = u32(clamped_percent);
+    let clamped_percent = clamp(percent, 0.0, 1.0);
+    let expanded_percent = clamped_percent * f32(COLOR_COUNT - 1u);
+    let start_index: u32 = u32(floor(expanded_percent));
     var final_color: vec3<f32> = vec3<f32>(0.0);
     if (start_index != (COLOR_COUNT - 1u)) {
         let end_index: u32 = start_index + 1u;
