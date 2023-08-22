@@ -34,8 +34,8 @@ const ESCAPE_RANGE: f32 = 2.0;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var complex: vec2<f32> = in.domain;
-    let constant: vec2<f32> = vec2<f32>(-0.545 + (sin(data.time/3.0) * 0.02), -0.5 + (sin(data.time/11.0) * 0.02)); // Render a Julia set
-    //let constant = in.domain; // This renders the Mandelbrot set
+    //let constant: vec2<f32> = vec2<f32>(-0.545 + (sin(data.time/3.0) * 0.02), -0.5 + (sin(data.time/11.0) * 0.02)); // Render a Julia set
+    let constant = in.domain; // This renders the Mandelbrot set
 
     var escape_time: u32;
     for (escape_time = 1u; escape_time < MAX_ITERATIONS; escape_time++) {
