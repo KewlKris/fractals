@@ -1,0 +1,14 @@
+{
+  "name": "fractals",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clean-main": "node ./src/build.js --clean-main",
+    "clean-dist": "node ./src/build.js --clean-dist",
+    "clean": "node ./src/build.js --clean-main --clean-dist",
+    "build": "node ./src/build.js --clean-main --clean-dist && cd ./src/fractal-renderer && wasm-pack build --release --target web && cd ../site && npm run build && cd ../../ && node ./src/build.js --build"
+  },
+  "author": "",
+  "license": "ISC"
+}
