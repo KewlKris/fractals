@@ -2,7 +2,6 @@
 	"name": "site",
 	"version": "1.0.0",
 	"description": "",
-	"main": "index.js",
 	"source": "./src/index.html",
 	"scripts": {
 		"build": "parcel build",
